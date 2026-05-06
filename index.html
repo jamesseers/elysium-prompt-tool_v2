@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elysium — AI Prompt Generator</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F5F4F0;--surface:#FAFAF8;--surface-alt:#EFEDE8;
+  --border:#D8D5CE;--border-strong:#B8B5AE;
+  --text:#1A1916;--text-2:#6B6860;--text-3:#9A9890;
+  --accent:#1A1916;--radius:6px;--radius-lg:10px;
+  --out-bg:#1A1916;--out-text:#E8E6E0;--out-muted:#7A7870;--out-accent:#C8B88A;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6}
+.app{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;min-height:100vh}
+.header{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;gap:16px}
+.h-logo{font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase}
+.h-div{width:1px;height:14px;background:var(--border)}
+.h-title{font-size:12px;color:var(--text-2);letter-spacing:0.03em}
+.h-badge{margin-left:auto;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;background:#2D4A35;color:#C8DDB0;padding:3px 10px;border-radius:20px}
+.panel-left{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:24px 28px;height:calc(100vh - 49px)}
+.panel-right{background:var(--out-bg);overflow-y:auto;padding:24px 28px;height:calc(100vh - 49px)}
+.sec-label{font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid var(--border)}
+.section{margin-bottom:24px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--text-2);margin-bottom:4px}
+.field label em{font-weight:400;font-style:normal;color:var(--text-3);font-size:11px}
+.field input,.field select,.field textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:8px 11px;font-size:13px;color:var(--text);font-family:inherit;transition:border-color 0.15s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--border-strong);box-shadow:0 0 0 3px rgba(26,25,22,0.05)}
+.field textarea{resize:vertical;min-height:75px;line-height:1.5}
+.field select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%239A9890' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.togs{display:flex;flex-wrap:wrap;gap:5px}
+.tog{font-size:11px;padding:4px 11px;border:1px solid var(--border);border-radius:20px;background:transparent;color:var(--text-2);cursor:pointer;font-family:inherit;transition:all 0.1s;white-space:nowrap}
+.tog:hover{border-color:var(--border-strong);color:var(--text)}
+.tog.on{background:var(--accent);border-color:var(--accent);color:#F5F4F0}
+.colour-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.cswatch{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px;border-radius:var(--radius);border:1px solid transparent;transition:all 0.1s}
+.cswatch:hover{border-color:var(--border)}
+.cswatch.on{border-color:var(--border-strong);background:var(--surface-alt)}
+.cdot{width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,0.08)}
+.cname{font-size:9px;color:var(--text-3);text-align:center;line-height:1.2}
+.upload-zone{border:1.5px dashed var(--border);border-radius:var(--radius-lg);padding:18px;text-align:center;cursor:pointer;position:relative;background:var(--bg);transition:all 0.15s}
+.upload-zone:hover{border-color:var(--border-strong);background:var(--surface-alt)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-zone .u-icon{font-size:20px;color:var(--text-3);margin-bottom:5px}
+.upload-zone p{font-size:12px;color:var(--text-2);font-weight:500}
+.upload-zone small{font-size:11px;color:var(--text-3)}
+.previews{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px}
+.prev-item{position:relative;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+.prev-item img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.prev-item .rm{position:absolute;top:4px;right:4px;width:17px;height:17px;background:rgba(26,25,22,0.7);color:#fff;border:none;border-radius:50%;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center}
+.prev-item .lbl{position:absolute;bottom:0;left:0;right:0;background:rgba(26,25,22,0.75);padding:3px 5px}
+.prev-item .lbl select{width:100%;font-size:9px;background:transparent;color:#E8E6E0;border:none;padding:0;cursor:pointer;font-family:inherit}
+.prev-item .lbl select option{background:#1A1916}
+.gen-btn{width:100%;padding:12px;background:var(--accent);color:#F5F4F0;border:none;border-radius:var(--radius-lg);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.15s;letter-spacing:0.02em}
+.gen-btn:hover{background:#2D2C28}
+.gen-btn:active{transform:scale(0.99)}
+.gen-btn:disabled{opacity:0.5;cursor:not-allowed}
+.spin{width:13px;height:13px;border:1.5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:none}
+.gen-btn.loading .spin{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.req{color:#C87860}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;color:var(--out-muted)}
+.empty-state svg{opacity:0.25;margin-bottom:12px}
+.empty-state p{font-size:13px;max-width:210px;line-height:1.7}
+.out-section{margin-bottom:22px}
+.out-sec-label{font-size:9px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--out-muted);margin-bottom:9px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between}
+.out-sec-label button{font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:3px 9px;cursor:pointer;color:var(--out-muted);font-family:inherit;transition:all 0.1s}
+.out-sec-label button:hover{color:var(--out-text);background:rgba(255,255,255,0.09)}
+.out-sec-label button.done{color:#8DB88A;border-color:rgba(141,184,138,0.3)}
+.brief-grid{display:grid;gap:5px}
+.brief-row{display:grid;grid-template-columns:100px 1fr;gap:8px;font-size:12px}
+.bkey{color:var(--out-muted);font-size:11px;padding-top:1px}
+.bval{color:var(--out-text);line-height:1.5}
+.ref-list{display:grid;gap:7px}
+.ref-item{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius);padding:10px 12px}
+.ref-head{display:flex;align-items:center;gap:7px;margin-bottom:3px}
+.ref-num{width:17px;height:17px;border-radius:50%;background:rgba(200,184,138,0.15);color:var(--out-accent);font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ref-name{font-size:12px;font-weight:500;color:var(--out-text)}
+.ref-use{font-size:11px;color:var(--out-muted);margin-left:24px}
+.ref-ign{font-size:11px;color:#7A4A3A;margin-left:24px;margin-top:2px}
+.prompt-block{background:rgba(200,184,138,0.05);border:1px solid rgba(200,184,138,0.18);border-radius:var(--radius-lg);padding:14px;position:relative}
+.prompt-text{font-family:'SF Mono',Monaco,monospace;font-size:11.5px;line-height:1.8;color:var(--out-text);white-space:pre-wrap;word-break:break-word}
+.copy-btn{position:absolute;top:9px;right:9px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:4px 9px;font-size:11px;cursor:pointer;color:var(--out-muted);font-family:inherit;transition:all 0.1s}
+.copy-btn:hover{color:var(--out-text);background:rgba(255,255,255,0.1)}
+.copy-btn.done{color:#8DB88A;border-color:rgba(141,184,138,0.3)}
+.check-list{display:grid;gap:4px}
+.check-item{display:flex;align-items:flex-start;gap:7px;font-size:12px}
+.chk{width:14px;height:14px;border-radius:50%;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600}
+.chk.pass{background:rgba(141,184,138,0.15);color:#8DB88A}
+.chk.warn{background:rgba(200,184,138,0.15);color:var(--out-accent)}
+.chk.fail{background:rgba(180,80,60,0.15);color:#C87860}
+.chk-txt{line-height:1.4;color:var(--out-text)}
+.chk-txt.warn{color:var(--out-accent)}
+.chk-txt.fail{color:#C87860}
+.flag-box{background:rgba(180,80,60,0.08);border:1px solid rgba(180,80,60,0.2);border-radius:var(--radius);padding:10px 12px;font-size:12px;color:#C87860;line-height:1.5}
+.copy-all{width:100%;padding:9px;background:transparent;border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-lg);font-size:12px;cursor:pointer;color:var(--out-muted);font-family:inherit;margin-top:6px;transition:all 0.1s;letter-spacing:0.02em}
+.copy-all:hover{border-color:rgba(255,255,255,0.2);color:var(--out-text)}
+.copy-all.done{color:#8DB88A;border-color:rgba(141,184,138,0.25)}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <span class="h-logo">Elysium Health</span>
+    <div class="h-div"></div>
+    <span class="h-title">AI Image Prompt Generator</span>
+    <span class="h-badge">Nanobanana</span>
+  </div>
+
+  <div class="panel-left">
+    <div class="section">
+      <div class="sec-label">Brief</div>
+      <div class="row">
+        <div class="field">
+          <label>Product</label>
+          <select id="product">
+            <option value="none">No product</option>
+            <option value="Basis">Basis</option>
+            <option value="Signal">Signal</option>
+            <option value="Mosaic">Mosaic</option>
+            <option value="Format">Format</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Shot category</label>
+          <select id="category">
+            <option value="">Select…</option>
+            <option>A — Still Life</option>
+            <option>B — Lifestyle Interior</option>
+            <option>C — Performance Exterior</option>
+            <option>D — Place of Rest</option>
+            <option>F — Cognitive Performance</option>
+            <option>G — Performance Kit</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Usage <span class="req">*</span></label>
+          <select id="usage">
+            <option value="">Select…</option>
+            <option>Hero — desktop</option>
+            <option>Hero — mobile</option>
+            <option>Email hero</option>
+            <option>Ad creative</option>
+            <option>PDP image</option>
+            <option>Social — square</option>
+            <option>Social — portrait</option>
+            <option>Brand / editorial</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Crop format <span class="req">*</span></label>
+          <select id="crop">
+            <option value="">Select…</option>
+            <option>Landscape 16:9</option>
+            <option>Landscape 3:2</option>
+            <option>Portrait 4:5</option>
+            <option>Portrait 9:16</option>
+            <option>Square 1:1</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Scene description <span class="req">*</span> <em>— what's happening, who, where</em></label>
+        <textarea id="scene" placeholder="e.g. Woman mid-40s at bathroom counter, morning routine, reaching for supplement jar…"></textarea>
+      </div>
+      <div class="field">
+        <label>Image goal <em>— what should this communicate?</em></label>
+        <textarea id="goal" placeholder="e.g. Daily ritual, trust in routine, effortless premium wellness…" style="min-height:58px"></textarea>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="sec-label">Composition</div>
+      <div class="field">
+        <label>Copy / overlay space</label>
+        <div class="togs" id="copy-togs">
+          <button class="tog on" data-v="None">None</button>
+          <button class="tog" data-v="Top third">Top third</button>
+          <button class="tog" data-v="Left third">Left third</button>
+          <button class="tog" data-v="Right third">Right third</button>
+          <button class="tog" data-v="Bottom third">Bottom third</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Product prominence</label>
+        <div class="togs" id="prom-togs">
+          <button class="tog on" data-v="Incidental — part of scene">Incidental</button>
+          <button class="tog" data-v="Clearly visible, not hero">Visible</button>
+          <button class="tog" data-v="Hero of the image">Hero</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="sec-label">Accent colour <em style="font-size:10px;text-transform:none;letter-spacing:0;font-weight:400;color:var(--text-3)"> — one per image</em></div>
+      <div class="colour-grid" id="colour-grid">
+        <div class="cswatch on" data-c="Model decides"><div class="cdot" style="background:conic-gradient(#2D4A35,#8B3A2A,#1E2D45,#6B6B38,#2D4A35);border:none"></div><span class="cname">Model decides</span></div>
+        <div class="cswatch" data-c="Deep forest green"><div class="cdot" style="background:#2D4A35"></div><span class="cname">Forest green</span></div>
+        <div class="cswatch" data-c="Burnt orange"><div class="cdot" style="background:#8B3A2A"></div><span class="cname">Burnt orange</span></div>
+        <div class="cswatch" data-c="Muted terracotta"><div class="cdot" style="background:#B5614A"></div><span class="cname">Terracotta</span></div>
+        <div class="cswatch" data-c="Olive"><div class="cdot" style="background:#6B6B38"></div><span class="cname">Olive</span></div>
+        <div class="cswatch" data-c="Deep navy"><div class="cdot" style="background:#1E2D45"></div><span class="cname">Deep navy</span></div>
+        <div class="cswatch" data-c="Dark moss green"><div class="cdot" style="background:#3D4D2D"></div><span class="cname">Dark moss</span></div>
+        <div class="cswatch" data-c="Warm brown"><div class="cdot" style="background:#6B4A2A"></div><span class="cname">Warm brown</span></div>
+        <div class="cswatch" data-c="Deep cherry red"><div class="cdot" style="background:#6B1E1E"></div><span class="cname">Cherry red</span></div>
+        <div class="cswatch" data-c="Cobalt blue"><div class="cdot" style="background:#1E3A6B"></div><span class="cname">Cobalt</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="sec-label">Reference images <em style="font-size:10px;text-transform:none;letter-spacing:0;font-weight:400;color:var(--text-3)">optional — max 3</em></div>
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="file-input" accept="image/*" multiple>
+        <div class="u-icon">↑</div>
+        <p>Drop images here or click to upload</p>
+        <small>Product render · Scale reference · Composition/mood</small>
+      </div>
+      <div class="previews" id="previews"></div>
+    </div>
+
+    <div class="section">
+      <div class="field">
+        <label>Additional direction <em>optional</em></label>
+        <textarea id="notes" placeholder="Campaign theme, seasonal context, specific mood direction…" style="min-height:58px"></textarea>
+      </div>
+    </div>
+
+    <button class="gen-btn" id="gen-btn" onclick="generate()">
+      <div class="spin"></div>
+      <span id="btn-txt">Generate prompt</span>
+    </button>
+  </div>
+
+  <div class="panel-right" id="panel-right">
+    <div class="empty-state" id="empty">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="4" width="24" height="24" rx="4" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M10 16h12M10 11h12M10 21h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <p>Fill in the brief on the left and hit generate — your structured prompt and reference image list will appear here.</p>
+    </div>
+    <div id="output" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+let imgs=[],accentColour='Model decides',copySpace='None',prominence='Incidental — part of scene';
+
+document.querySelectorAll('#copy-togs .tog').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#copy-togs .tog').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');copySpace=b.dataset.v;
+}));
+document.querySelectorAll('#prom-togs .tog').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#prom-togs .tog').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');prominence=b.dataset.v;
+}));
+document.querySelectorAll('.cswatch').forEach(s=>s.addEventListener('click',()=>{
+  document.querySelectorAll('.cswatch').forEach(x=>x.classList.remove('on'));
+  s.classList.add('on');accentColour=s.dataset.c;
+}));
+
+const uz=document.getElementById('upload-zone');
+const fi=document.getElementById('file-input');
+uz.addEventListener('dragover',e=>{e.preventDefault();uz.style.borderColor='#1A1916'});
+uz.addEventListener('dragleave',()=>uz.style.borderColor='');
+uz.addEventListener('drop',e=>{e.preventDefault();uz.style.borderColor='';handleFiles(e.dataTransfer.files)});
+fi.addEventListener('change',e=>handleFiles(e.target.files));
+
+function handleFiles(files){
+  const rem=3-imgs.length;
+  for(let i=0;i<Math.min(files.length,rem);i++){
+    const f=files[i];if(!f.type.startsWith('image/'))continue;
+    const r=new FileReader();
+    r.onload=ev=>{imgs.push({dataUrl:ev.target.result,base64:ev.target.result.split(',')[1],type:f.type,label:'composition'});renderPreviews()};
+    r.readAsDataURL(f);
+  }
+}
+
+function renderPreviews(){
+  const c=document.getElementById('previews');c.innerHTML='';
+  imgs.forEach((img,i)=>{
+    const d=document.createElement('div');d.className='prev-item';
+    d.innerHTML=`<img src="${img.dataUrl}"><button class="rm" onclick="removeImg(${i})">✕</button><div class="lbl"><select onchange="imgs[${i}].label=this.value"><option value="composition" ${img.label==='composition'?'selected':''}>Composition ref</option><option value="product_render" ${img.label==='product_render'?'selected':''}>Product render</option><option value="scale" ${img.label==='scale'?'selected':''}>Scale reference</option></select></div>`;
+    c.appendChild(d);
+  });
+  uz.style.opacity=imgs.length>=3?'0.4':'1';
+  uz.style.pointerEvents=imgs.length>=3?'none':'auto';
+}
+
+function removeImg(i){imgs.splice(i,1);renderPreviews()}
+
+const SYS=`You are the AI behind a professional image prompt generation tool for Elysium Health — a premium longevity supplement brand. Your job is to take a creative brief and generate a complete, structured Nanobanana image prompt. Respond ONLY with valid JSON. No preamble, no markdown fences.
+
+DECISION HIERARCHY: 1) Honour request — subject, product, setting, format, action first. 2) Preserve product accuracy — renders are absolute locks. 3) Realistic scale — physically believable. 4) Apply Elysium visual rules. 5) Infer props intelligently — only what naturally belongs. 6) Protect copy space if ad-like. 7) Simplify when uncertain.
+
+LIGHTING: 5500–6000K, cool-neutral, Scandinavian interior 8am quality. Directional natural light from side. Highlights clean white to very slightly blue-white — never cream, ivory, amber. Warmth through materials only, never light or grade. No golden hour, no cinematic mood grading.
+
+CAMERA: 50mm equivalent, f/2.0–f/4.0. Foreground blur required — soft-focus element partially intruding one corner. Over-shoulder and elevated three-quarter angles preferred. Editorial asymmetry — never centred.
+
+MOVEMENT: Every image must have movement or life. Mid-action gestures, slight motion blur, turning, reaching, pouring, walking. Never static or posed.
+
+COLOUR: Base — crisp whites, pale grey, blue-grey, honed stone, warm wood, off-white ceramic. ONE accent per image, pre-selected, on one prominent object. Must register at thumbnail scale.
+
+SUBJECTS: Anonymous or partial. Back to camera, three-quarter, face turned away, tight hand/body crop. Never full portrait facing camera. Natural asymmetry, real age, skin texture. Premium wardrobe — top and bottom at least two tonal steps apart. Casual tops fully untucked: hem falls loose below the waistband. No logos.
+
+ENVIRONMENT: Lived-in, never staged or showroom-empty. Natural textures — stone, wood, linen, cotton, ceramic, glass. Subtle lived-in details: ruffled towel, water glass, book, mug, keys. No readable text, phone/laptop screens, branded props.
+
+PRODUCT RULES (if present): Closed jar 63mm H x 68mm diameter — compact palm-sized supplement jar, smaller than a standard apple, one adult hand wraps almost entirely around it. Open jar — open top with brushed stainless steel interior ring, compact and grippable. Product label clearly visible unless deliberately obscured. Realistic contact shadows, reflections, surface compression. ICE WATER GLASS — include in ALL product-present interior shots: tall clear glass, several ice cubes, condensation beads, window light specular highlight, faint moisture ring at base. Product appears ONLY where someone sleeps or lives, or dedicated performance kit. Never commute, car, transit, airport.
+
+CATEGORIES: A (Still Life) — product on premium surface, accent colour, ice water glass, strong directional light, foreground blur, person implied. B (Lifestyle Interior) — back to camera/anonymous, mid-action only, product incidental. C (Performance Exterior) — no product, specific real environment not generic, real age and vitality, elevated asymmetric angle. D (Place of Rest) — must be overnight setting, product only where someone sleeps or lives. F (Cognitive Performance) — intellectual presence, data/biometric cues ambient, product as tool. G (Performance Kit) — product lives in bag not displayed, over-shoulder angle.
+
+COPY SPACE: Low-detail, low-contrast, free of faces, hands, product, hard edges, bright glare. Light space for dark text, dark for white.
+
+NEVER: warm/golden grade, sepia, amber AI glow, cinematic mood grading, HDR, flat studio light, posed subjects, stock gestures, visible logos, all-neutral beige scene, glossy synthetic materials, sterile showroom interior, wrong product scale, product floating without contact shadow, generated text, CTAs, badges, UI overlays, literal science imagery, matching earth-tone outfits, tucked casual shirt.
+
+REFERENCE IMAGE RULES: Max 3. Product render — shape, colour, label, material, lid state, finish — absolute lock. Scale reference — product scale relative to hand or known object only. Composition/mood — framing, camera angle, lighting mood, scene logic. CRITICAL — never use a reference that shares the same environment as the prompt.
+
+OUTPUT — respond only with this exact JSON:
+{"brief":{"subject":"...","environment":"...","materials":"...","lighting":"...","composition":"...","camera":"...","movement":"...","mood":"...","colour":"...","product_treatment":"...","copy_space":"...","science_cues":"..."},"reference_images":[{"number":1,"name":"...","use_for":"...","ignore":"..."}],"prompt":"Full Nanobanana-ready prompt as a single flowing block. Comprehensive, specific, art-directed. End with Avoid: [key avoids specific to this execution].","checklist":[{"status":"pass","item":"..."}],"flags":"Any issues or recommendations. Empty string if none."}`;
+
+async function generate(){
+  const usage=document.getElementById('usage').value;
+  const crop=document.getElementById('crop').value;
+  const scene=document.getElementById('scene').value.trim();
+  if(!scene||!usage||!crop){alert('Please fill in: Scene description, Usage, and Crop format.');return}
+
+  const btn=document.getElementById('gen-btn');
+  btn.disabled=true;btn.classList.add('loading');
+  document.getElementById('btn-txt').textContent='Generating';
+
+  const content=[{type:'text',text:`Generate an Elysium image prompt from this brief:\n\nPRODUCT: ${document.getElementById('product').value}\nSHOT CATEGORY: ${document.getElementById('category').value||'Not specified'}\nUSAGE: ${usage}\nCROP: ${crop}\nSCENE: ${scene}\nGOAL: ${document.getElementById('goal').value.trim()||'Not specified'}\nCOPY SPACE: ${copySpace}\nPRODUCT PROMINENCE: ${prominence}\nACCENT COLOUR: ${accentColour}\nNOTES: ${document.getElementById('notes').value.trim()||'None'}\nREFERENCE IMAGES: ${imgs.length>0?imgs.map((img,i)=>`Image ${i+1} (${img.label})`).join(', '):'None — recommend what to source'}`}];
+
+  imgs.forEach((img,i)=>{
+    content.push({type:'image',source:{type:'base64',media_type:img.type,data:img.base64}});
+    content.push({type:'text',text:`[Image ${i+1} above is: ${img.label}]`});
+  });
+
+  try{
+    const res=await fetch('/.netlify/functions/generate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,system:SYS,messages:[{role:'user',content}]})
+    });
+    const data=await res.json();
+    if(data.error){throw new Error(data.error)}
+    const raw=data.content[0].text.replace(/```json|```/g,'').trim();
+    renderOutput(JSON.parse(raw));
+  }catch(e){
+    alert('Generation failed. Check your API key is set correctly in Netlify environment variables.');
+    console.error(e);
+  }finally{
+    btn.disabled=false;btn.classList.remove('loading');
+    document.getElementById('btn-txt').textContent='Generate prompt';
+  }
+}
+
+const BRIEF_KEYS={subject:'Subject',environment:'Environment',materials:'Materials',lighting:'Lighting',composition:'Composition',camera:'Camera',movement:'Movement',mood:'Mood',colour:'Colour',product_treatment:'Product',copy_space:'Copy space',science_cues:'Science cues'};
+
+function renderOutput(r){
+  document.getElementById('empty').style.display='none';
+  const out=document.getElementById('output');out.style.display='block';
+
+  const briefRows=Object.entries(r.brief).filter(([,v])=>v&&v!=='N/A'&&v!=='None'&&v!=='None required').map(([k,v])=>`<div class="brief-row"><span class="bkey">${BRIEF_KEYS[k]||k}</span><span class="bval">${v}</span></div>`).join('');
+  const refItems=r.reference_images.map(ref=>`<div class="ref-item"><div class="ref-head"><div class="ref-num">${ref.number}</div><div class="ref-name">${ref.name}</div></div><div class="ref-use">Use for: ${ref.use_for}</div>${ref.ignore?`<div class="ref-ign">Ignore: ${ref.ignore}</div>`:''}</div>`).join('');
+  const checkItems=r.checklist.map(c=>{const sym=c.status==='pass'?'✓':c.status==='warn'?'!':'✕';return`<div class="check-item"><div class="chk ${c.status}">${sym}</div><span class="chk-txt ${c.status==='pass'?'':c.status}">${c.item}</span></div>`}).join('');
+  const flagsHtml=r.flags&&r.flags.trim()?`<div class="out-section"><div class="out-sec-label">Flags</div><div class="flag-box">${r.flags}</div></div>`:'';
+
+  out.innerHTML=`
+    <div class="out-section">
+      <div class="out-sec-label">Art direction brief <button id="cp-brief" onclick="copySec('brief-rows','cp-brief')">Copy</button></div>
+      <div class="brief-grid" id="brief-rows">${briefRows}</div>
+    </div>
+    <div class="out-section">
+      <div class="out-sec-label">Reference images <button id="cp-refs" onclick="copySec('ref-rows','cp-refs')">Copy</button></div>
+      <div class="ref-list" id="ref-rows">${refItems}</div>
+    </div>
+    <div class="out-section">
+      <div class="out-sec-label">Nanobanana prompt <button class="copy-btn" id="cp-prompt" onclick="copyPrompt()">Copy</button></div>
+      <div class="prompt-block"><div class="prompt-text" id="prompt-txt">${r.prompt}</div></div>
+    </div>
+    <div class="out-section">
+      <div class="out-sec-label">Pre-send checklist</div>
+      <div class="check-list">${checkItems}</div>
+    </div>
+    ${flagsHtml}
+    <button class="copy-all" id="copy-all-btn" onclick="copyAll()">Copy everything to clipboard</button>`;
+}
+
+function flash(id){const b=document.getElementById(id);if(!b)return;b.textContent='Copied';b.classList.add('done');setTimeout(()=>{b.textContent='Copy';b.classList.remove('done')},2000)}
+
+function copyPrompt(){
+  navigator.clipboard.writeText(document.getElementById('prompt-txt').textContent);
+  const b=document.getElementById('cp-prompt');b.textContent='Copied';b.classList.add('done');
+  setTimeout(()=>{b.textContent='Copy';b.classList.remove('done')},2000);
+}
+
+function copySec(id,btnId){
+  const el=document.getElementById(id);let txt='';
+  if(id==='brief-rows'){
+    el.querySelectorAll('.brief-row').forEach(r=>{txt+=r.querySelector('.bkey').textContent+': '+r.querySelector('.bval').textContent+'\n'});
+  }else{
+    el.querySelectorAll('.ref-item').forEach(r=>{
+      txt+=r.querySelector('.ref-num').textContent+'. '+r.querySelector('.ref-name').textContent+'\n';
+      txt+=r.querySelector('.ref-use').textContent+'\n';
+      const ign=r.querySelector('.ref-ign');if(ign)txt+=ign.textContent+'\n';
+      txt+='\n';
+    });
+  }
+  navigator.clipboard.writeText(txt.trim());flash(btnId);
+}
+
+function copyAll(){
+  const brief=Array.from(document.querySelectorAll('#brief-rows .brief-row')).map(r=>r.querySelector('.bkey').textContent+': '+r.querySelector('.bval').textContent).join('\n');
+  const refs=Array.from(document.querySelectorAll('#ref-rows .ref-item')).map(r=>{
+    let t=r.querySelector('.ref-num').textContent+'. '+r.querySelector('.ref-name').textContent+'\n'+r.querySelector('.ref-use').textContent;
+    const ign=r.querySelector('.ref-ign');if(ign)t+='\n'+ign.textContent;return t;
+  }).join('\n\n');
+  const prompt=document.getElementById('prompt-txt').textContent;
+  const full=`REFERENCE IMAGES\n${'-'.repeat(40)}\n${refs}\n\nPROMPT\n${'-'.repeat(40)}\n${prompt}\n\nART DIRECTION BRIEF\n${'-'.repeat(40)}\n${brief}`;
+  navigator.clipboard.writeText(full);
+  const b=document.getElementById('copy-all-btn');b.textContent='Copied';b.classList.add('done');
+  setTimeout(()=>{b.textContent='Copy everything to clipboard';b.classList.remove('done')},2000);
+}
+</script>
+</body>
+</html>
